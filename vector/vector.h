@@ -11,13 +11,6 @@ private:
   T *data;
   size_t _capacity;
   size_t _size;
-  void destroy_and_deallocate(T *&data) {
-    for (size_t i = 0; i < _size; i++) {
-      data[i].~T();
-    }
-    operator delete(data);
-    data = nullptr;
-  }
 
 public:
   Vector() : data(nullptr), _capacity(0), _size(0) {}
@@ -43,7 +36,7 @@ public:
   }
   Vector &operator=(const Vector &other) {
     if (this != &other) {
-      destroy_and_deallocate(data);
+      clear(data);
       _size = other._size;
       _capacity = other._capacity;
       data = static_cast<T *>(operator new(sizeof(T) * other._capacity));
@@ -60,7 +53,7 @@ public:
   }
   Vector &operator=(Vector &&other) {
     if (this != &other) {
-      destroy_and_deallocate(data);
+      clear(data);
       data = other.data;
       _size = other._size;
       _capacity = other._capacity;
@@ -70,7 +63,14 @@ public:
     }
     return *this;
   }
-  ~Vector() { destroy_and_deallocate(data); }
+  ~Vector() { clear(data); }
+  void clear() {
+    for (size_t i = 0; i < _size; i++) {
+      data[i].~T();
+    }
+    operator delete(data);
+    data = nullptr;
+  }
   void push_back(const T &value) {
     if (_size == _capacity) {
       if (_capacity == 0) {
@@ -79,7 +79,7 @@ public:
       _capacity *= 2;
       T *new_data = static_cast<T *>(operator new(sizeof(T) * _capacity));
       std::uninitialized_move(data, data + _size, new_data);
-      destroy_and_deallocate(data);
+      clear(data);
       data = new_data;
     }
     new (&data[_size]) T(value);
@@ -90,7 +90,7 @@ public:
     if (new_cap > _capacity) {
       T *new_data = static_cast<T *>(operator new(sizeof(T) * new_cap));
       std::uninitialized_move(data, data + _size, new_data);
-      destroy_and_deallocate(data);
+      clear(data);
       data = new_data;
       _capacity = new_cap;
     }
